@@ -20,6 +20,8 @@ export interface Client {
   desc: string
   group: string
   remark?: string
+  devs?: number
+  email?: string
   delayStart?: boolean
   autoReset?: boolean
   resetDays?: number
@@ -43,6 +45,8 @@ const defaultClient: Client = {
   desc: "",
   group: "",
   remark: "",
+  devs: 0,
+  email: "",
   delayStart: false,
   autoReset: false,
   resetDays: 0,

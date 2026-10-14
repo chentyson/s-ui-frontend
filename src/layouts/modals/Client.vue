@@ -60,7 +60,8 @@
                     v-model="client.group"
                     :items="groups"
                     :label="$t('client.group')"
-                    hide-details
+                    :hint="$t('client.groupHint')"
+                    persistent-hint
                   />
                 </v-col>
               </v-row>
@@ -95,6 +96,30 @@
                   <v-text-field
                     v-model="client.remark"
                     :label="$t('client.remark')"
+                    hide-details
+                  />
+                </v-col>
+                <v-col
+                  cols="12"
+                  sm="6"
+                  md="4"
+                >
+                  <v-text-field
+                    v-model.number="client.devs"
+                    type="number"
+                    min="0"
+                    :label="$t('client.devs')"
+                    hide-details
+                  />
+                </v-col>
+                <v-col
+                  cols="12"
+                  sm="6"
+                  md="4"
+                >
+                  <v-text-field
+                    v-model="client.email"
+                    :label="$t('email')"
                     hide-details
                   />
                 </v-col>

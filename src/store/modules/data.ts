@@ -17,6 +17,8 @@ export interface Onlines {
   inbound?: string[]
   outbound?: string[]
   user?: string[]
+  userCounts?: Record<string, number>
+  rejectionUsers?: string[]
 }
 
 // Everything the panel keeps in sync with api/load. Only `onlines`,

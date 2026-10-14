@@ -43,6 +43,46 @@
     @close="closeSessions"
   />
   <v-dialog
+    v-model="rejections.visible"
+    width="600"
+  >
+    <v-card
+      rounded="lg"
+      :title="$t('rejection.title') + ' — ' + rejections.user"
+    >
+      <v-divider />
+      <v-card-text>
+        <v-table density="compact" v-if="rejections.items.length > 0">
+          <thead>
+            <tr>
+              <th class="text-start">{{ $t('rejection.time') }}</th>
+              <th class="text-start">{{ $t('rejection.source') }}</th>
+              <th class="text-start">{{ $t('rejection.limit') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(r, i) in rejections.items" :key="i">
+              <td class="text-start">{{ new Date(r.at).toLocaleString(locale) }}</td>
+              <td class="text-start">{{ r.source }}</td>
+              <td class="text-start">{{ r.limit }}</td>
+            </tr>
+          </tbody>
+        </v-table>
+        <div v-else class="text-center py-4">{{ $t('rejection.empty') }}</div>
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer />
+        <v-btn
+          color="primary"
+          variant="tonal"
+          @click="rejections.visible = false"
+        >
+          {{ $t('actions.close') }}
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+  <v-dialog
     v-model="resetTrafficModal"
     width="auto"
   >
@@ -299,16 +339,16 @@
               <v-chip
                 density="comfortable"
                 size="small"
-                color="success"
+                :color="hasRejections(item.name) ? 'warning' : 'success'"
                 variant="flat"
                 link
-                @click="showSessions(item.name)"
+                @click="showOnlineDetail(item.name)"
               >
-                {{ $t('online') }}
+                {{ getDeviceCount(item.name) }}
                 <v-tooltip
                   activator="parent"
                   location="top"
-                  :text="$t('sessions.title')"
+                  :text="hasRejections(item.name) ? $t('rejection.tooltip') : $t('sessions.title')"
                 />
               </v-chip>
             </template>
@@ -448,6 +488,33 @@ const isOnline = (cname: string) => computed(() => {
   return Data().onlines?.user?.includes(cname) ?? false
 })
 
+const getDeviceCount = (cname: string): number => {
+  return Data().onlines?.userCounts?.[cname] ?? 0
+}
+
+const hasRejections = (cname: string): boolean => {
+  return Data().onlines?.rejectionUsers?.includes(cname) ?? false
+}
+
+const rejections = ref({
+  visible: false,
+  user: '',
+  items: [] as { user: string, source: string, limit: number, at: string }[],
+})
+
+const showOnlineDetail = async (cname: string) => {
+  // Always show rejection log dialog
+  rejections.value.user = cname
+  rejections.value.items = []
+  rejections.value.visible = true
+  try {
+    const msg = await HttpUtils.get<{ user: string, source: string, limit: number, at: string }[]>('api/rejections', { user: cname })
+    if (msg.success && Array.isArray(msg.obj)) {
+      rejections.value.items = msg.obj
+    }
+  } catch { /* keep empty */ }
+}
+
 const inbounds = computed((): Inbound[] => {
   return Data().inbounds?? []
 })
@@ -487,6 +554,8 @@ const headers = [
   { title: i18n.global.t('enable'), key: 'enable' },
   { title: i18n.global.t('client.desc'), key: 'desc' },
   { title: i18n.global.t('client.group'), key: 'group' },
+  { title: i18n.global.t('client.devs'), key: 'devs' },
+  { title: i18n.global.t('email'), key: 'email' },
   { title: i18n.global.t('pages.inbounds'), key: 'inbounds', width: 10 },
   { title: i18n.global.t('actions.action'), key: 'actions', sortable: false },
   { title: i18n.global.t('stats.volume'), key: 'volume' },
