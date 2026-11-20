@@ -320,6 +320,14 @@ export default {
       mode: "模式",
       reuse: "重用連線",
     },
+    zhdata: {
+      ports: "端口",
+      backend: "後端出站",
+      maxSessions: "會話上限",
+      decoy: "誘餌目標",
+      adminAddr: "管理位址",
+      adminToken: "管理權杖",
+    },
     cloudflared: {
       token: "通道權杖",
       protocol: "協定",

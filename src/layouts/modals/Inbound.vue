@@ -74,7 +74,7 @@
           >
             <v-window-item value="s">
               <Listen
-                v-if="!NoListen.includes(inbound.type)"
+                v-if="!NoListen.includes(inbound.type) && !CustomListen.includes(inbound.type)"
                 :data="inbound"
                 :in-tags="inTags"
               />
@@ -89,6 +89,11 @@
               />
               <Snell
                 v-if="inbound.type == inTypes.Snell"
+                direction="in"
+                :data="inbound"
+              />
+              <Zhdata
+                v-if="inbound.type == inTypes.Zhdata"
                 direction="in"
                 :data="inbound"
               />
@@ -235,7 +240,7 @@
 
 <script lang="ts">
 import { PropType } from 'vue'
-import { InTypes, createInbound, Addr, ShadowTLS } from '@/types/inbounds'
+import { InTypes, createInbound, Addr, ShadowTLS, Zhdata as ZhdataInbound, Inbound } from '@/types/inbounds'
 import { tls } from '@/types/tls'
 import DocLink from '@/components/DocLink.vue'
 import RandomUtil from '@/plugins/randomUtil'
@@ -245,6 +250,7 @@ import Direct from '@/components/protocols/Direct.vue'
 import Users from '@/components/Users.vue'
 import Shadowsocks from '@/components/protocols/Shadowsocks.vue'
 import Snell from '@/components/protocols/Snell.vue'
+import Zhdata from '@/components/protocols/Zhdata.vue'
 import Cloudflared from '@/components/protocols/Cloudflared.vue'
 import Hysteria from '@/components/protocols/Hysteria.vue'
 import Hysteria2 from '@/components/protocols/Hysteria2.vue'
@@ -265,7 +271,7 @@ export default {
     DocLink,
     Listen, InTls, Hysteria2, Naive, Direct, Shadowsocks,
     Users, Hysteria, ShadowTls, TProxy, Multiplex, Tuic, Tun,
-    AnyTls, Transport, AddrVue, OutJsonVue, Dial, Snell, Cloudflared
+    AnyTls, Transport, AddrVue, OutJsonVue, Dial, Snell, Cloudflared, Zhdata
   },
   props: {
     visible: { type: Boolean, required: true },
@@ -281,7 +287,7 @@ export default {
       loading: false,
       side: "s",
       inTypes: InTypes,
-      inboundWithUsers: ['mixed', 'socks', 'http', 'shadowsocks', 'vmess', 'trojan', 'naive', 'hysteria', 'shadowtls', 'tuic', 'hysteria2', 'vless', 'anytls', 'snell'],
+      inboundWithUsers: ['mixed', 'socks', 'http', 'shadowsocks', 'vmess', 'trojan', 'naive', 'hysteria', 'shadowtls', 'tuic', 'hysteria2', 'vless', 'anytls', 'snell', 'zhdata'],
       initUsers: {
         model: 'none',
         values: <(number | string)[]>[],
@@ -322,6 +328,9 @@ export default {
       // tun brings its own interface options; cloudflared dials out to the
       // Cloudflare edge and sing-box rejects listen fields on it.
       NoListen: [InTypes.Tun, InTypes.Cloudflared],
+      // zhdata listens too, but on its own comma-separated port list, so the
+      // generic single listen/listen_port block must not write into it.
+      CustomListen: [InTypes.Zhdata],
     }
   },
   computed: {
@@ -329,6 +338,8 @@ export default {
       if (this.inbound == undefined) return false
       if (this.inbound.tag == "") return false
       if (this.inbound.listen_port > 65535 || this.inbound.listen_port < 1) return false
+      // zhdata binds no port at all without at least one entry in its list.
+      if (this.inbound.type == InTypes.Zhdata && !(<ZhdataInbound>this.inbound).listen_ports?.length) return false
       if (this.OnlyTLS.includes(this.inbound.type) && this.inbound.tls_id == 0) return false
       return true
     },
@@ -394,9 +405,17 @@ export default {
         : this.inbound.type + "-" + (noListen ? RandomUtil.randomSeq(3) : this.inbound.listen_port)
       // Use previous data. Types that do not listen must not carry the listen
       // settings over, sing-box rejects them as unknown fields.
-      const prevConfig = noListen
+      let prevConfig: Partial<Inbound> = noListen
         ? { id: this.inbound.id, tag: tag }
         : { id: this.inbound.id, tag: tag, listen: this.inbound.listen?? "::", listen_port: this.inbound.listen_port }
+      // zhdata owns its listen fields (host in listen, ports in listen_ports),
+      // so the single listen_port is dropped and the current one seeds the
+      // list. The generic "::" any-address placeholder becomes the empty host
+      // the zhdata core contract defaults to.
+      if (this.inbound.type == InTypes.Zhdata) {
+        const host = this.inbound.listen
+        prevConfig = { id: this.inbound.id, tag: tag, listen: (host && host != "::") ? host : "", listen_ports: [this.inbound.listen_port as number] }
+      }
       this.inbound = createInbound(this.inbound.type, prevConfig)
       if (this.HasInData.includes(this.inbound.type)){
         this.inbound.addrs = []

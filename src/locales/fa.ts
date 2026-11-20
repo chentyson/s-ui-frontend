@@ -311,6 +311,14 @@ export default {
       mode: "حالت",
       reuse: "استفاده مجدد از اتصال",
     },
+    zhdata: {
+      ports: "پورت‌ها",
+      backend: "بک‌اند",
+      maxSessions: "حداکثر نشست‌ها",
+      decoy: "هدف طعمه",
+      adminAddr: "نشانی مدیریت",
+      adminToken: "توکن مدیریت",
+    },
     cloudflared: {
       token: "توکن تونل",
       protocol: "پروتکل",

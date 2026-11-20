@@ -322,6 +322,14 @@ export default {
       mode: "模式",
       reuse: "复用连接",
     },
+    zhdata: {
+      ports: "端口",
+      backend: "后端出站",
+      maxSessions: "会话上限",
+      decoy: "诱饵目标",
+      adminAddr: "管理地址",
+      adminToken: "管理令牌",
+    },
     cloudflared: {
       token: "隧道令牌",
       protocol: "协议",

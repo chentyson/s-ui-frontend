@@ -322,6 +322,14 @@ export default {
       mode: "Mode",
       reuse: "Reuse Connection",
     },
+    zhdata: {
+      ports: "Ports",
+      backend: "Backend",
+      maxSessions: "Max Sessions",
+      decoy: "Decoy",
+      adminAddr: "Admin Address",
+      adminToken: "Admin Token",
+    },
     cloudflared: {
       token: "Tunnel Token",
       protocol: "Protocol",

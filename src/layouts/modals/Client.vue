@@ -340,7 +340,7 @@
                     hide-details
                   />
                   <v-text-field
-                    v-if="clientConfig[key].uuid != undefined"
+                    v-if="clientConfig[key].uuid != undefined && key != 'zhdata'"
                     v-model="clientConfig[key].uuid"
                     label="UUID"
                     hide-details
@@ -362,6 +362,16 @@
                     v-model="clientConfig[key].userkey"
                     label="User Key"
                     hide-details
+                  />
+                  <!-- zhdata authenticates by uuid alone, so the field gets a
+                       copy button; the per-key refresh icon covers rotation. -->
+                  <v-text-field
+                    v-if="key == 'zhdata'"
+                    v-model="clientConfig[key].uuid"
+                    label="UUID"
+                    hide-details
+                    append-inner-icon="mdi-content-copy"
+                    @click:append-inner="copyToClipboard(String(clientConfig[key].uuid))"
                   />
                 </v-col>
               </v-row>
@@ -459,7 +469,9 @@ import { createClient, randomConfigs, updateConfigs, Link, shuffleConfigs } from
 import DatePick from '@/components/DateTime.vue'
 import { HumanReadable } from '@/plugins/utils'
 import Data from '@/store/modules/data'
-import { locale } from '@/locales'
+import { locale, i18n } from '@/locales'
+import Clipboard from 'clipboard'
+import { push } from 'notivue'
 import type { PropType } from 'vue'
 
 // The per-protocol credentials of a client. The type is internal to
@@ -611,6 +623,35 @@ export default {
       this.client.totalDown = (this.client.totalDown ?? 0) + this.client.down
       this.client.up = 0
       this.client.down = 0
+    },
+    copyToClipboard(txt:string) {
+      const hiddenButton = document.createElement('button')
+      hiddenButton.className = 'clipboard-btn'
+      document.body.appendChild(hiddenButton)
+
+      const clipboard = new Clipboard('.clipboard-btn', {
+        text: () => txt,
+      })
+
+      clipboard.on('success', () => {
+        clipboard.destroy()
+        push.success({
+          message: i18n.global.t('success') + ": " + i18n.global.t('copyToClipboard'),
+          duration: 5000,
+        })
+      })
+
+      clipboard.on('error', () => {
+        clipboard.destroy()
+        push.error({
+          message: i18n.global.t('failed') + ": " + i18n.global.t('copyToClipboard'),
+          duration: 5000,
+        })
+      })
+
+      // Perform click on hidden button to trigger copy
+      hiddenButton.click()
+      document.body.removeChild(hiddenButton)
     }
   },
 }

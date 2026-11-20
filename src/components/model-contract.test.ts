@@ -102,6 +102,8 @@ const cases: Case[] = [
     model: () => ({ type: 'warp', address: ['10.0.0.2/32'], private_key: 'seed', listen_port: 0, mtu: 1420, peers: [{ address: 'seed', port: 0, public_key: 'seed' }], ext: {} }) },
   { name: 'protocols/Wireguard', load: () => import('./protocols/Wireguard.vue'),
     model: () => ({ type: 'wireguard', address: ['10.0.0.2/32'], private_key: 'seed', listen_port: 51820, mtu: 1420, peers: [], ext: { public_key: 'seed', keys: [] } }) },
+  { name: 'protocols/Zhdata', load: () => import('./protocols/Zhdata.vue'),
+    model: () => ({ type: 'zhdata', listen: '', listen_ports: [49888, 49889], backend: 'direct', admin_addr: '127.0.0.1:6070', admin_token: 'seed' }), props: { direction: 'in' } },
 
   { name: 'services/Api', load: () => import('./services/Api.vue'),
     model: () => ({ type: 'api', secret: 'seed', external_controller: 'seed' }) },

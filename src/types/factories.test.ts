@@ -4,6 +4,7 @@ import { OutTypes, createOutbound } from './outbounds'
 import { EpTypes, createEndpoint } from './endpoints'
 import { SrvTypes, createSrv } from './services'
 import { DnsTypes, createDnsServer } from './dns'
+import { randomConfigs, shuffleConfigs } from './clients'
 
 // The five factories have unrelated return types, so the shared table below
 // addresses them through the one shape every result has.
@@ -91,5 +92,45 @@ describe('inbound secrets', () => {
     const direct = createInbound(InTypes.Direct) as { psk?: string, password?: string }
     expect(direct.psk).toBeUndefined()
     expect(direct.password).toBeUndefined()
+  })
+})
+
+// The zhdata admin contract (docs/zhdata-admin-api.md §2/§3) pins the option
+// field names the Go side reads, so the defaults are part of the contract.
+describe('zhdata', () => {
+  it('carries the contract defaults', () => {
+    const zhdata = createInbound(InTypes.Zhdata) as {
+      listen?: string, listen_ports?: number[], backend?: string,
+      admin_addr?: string, admin_token?: string, max_sessions?: number
+    }
+    expect(zhdata.listen).toBe('')
+    expect(zhdata.listen_ports).toEqual([])
+    expect(zhdata.backend).toBe('direct')
+    expect(zhdata.admin_addr).toBe('127.0.0.1:6070')
+    expect(zhdata.admin_token).toBeUndefined()
+    expect(zhdata.max_sessions).toBeUndefined()
+  })
+
+  it('keeps the listen_ports array private to the instance it came from', () => {
+    const first = createInbound(InTypes.Zhdata) as { listen_ports: number[] }
+    const second = createInbound(InTypes.Zhdata) as { listen_ports: number[] }
+    first.listen_ports.push(49888)
+    expect(second.listen_ports).toEqual([])
+  })
+
+  it('gives every client a zhdata uuid alongside the vless one', () => {
+    const configs = randomConfigs('alice')
+    expect(configs.zhdata?.name).toBe('alice')
+    expect(String(configs.zhdata?.uuid)).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
+  })
+
+  it('refreshes the zhdata uuid on shuffle without touching the others', () => {
+    const configs = randomConfigs('alice')
+    const zhdataUuid = String(configs.zhdata?.uuid)
+    const vlessUuid = String(configs.vless?.uuid)
+    shuffleConfigs(configs, 'zhdata')
+    expect(String(configs.zhdata?.uuid)).toMatch(/^[0-9a-f]{8}-/)
+    expect(String(configs.zhdata?.uuid)).not.toBe(zhdataUuid)
+    expect(String(configs.vless?.uuid)).toBe(vlessUuid)
   })
 })

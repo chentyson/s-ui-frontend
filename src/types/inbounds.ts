@@ -25,6 +25,7 @@ export const InTypes = {
   Redirect: 'redirect',
   TProxy: 'tproxy',
   Cloudflared: 'cloudflared',
+  Zhdata: 'zhdata',
 }
 
 type InType = typeof InTypes[keyof typeof InTypes]
@@ -189,6 +190,24 @@ export interface Snell extends InboundBasics {
   obfs_mode?: 'none' | 'http' | 'tls'
   mode?: 'default' | 'unshaped' | 'unsafe-raw'
 }
+export interface ZhdataUser {
+  name?: string
+  uuid: string
+}
+// zhdata is an external core: the panel stores its options with the core's own
+// field names (docs/zhdata-admin-api.md §2) so they can render a config.json
+// later. The core binds a comma-separated port list (":49888,:49889"); the
+// panel keeps that split into listen_ports plus an optional bind host in
+// listen ("" = every interface), and the service layer joins them.
+export interface Zhdata extends InboundBasics {
+  listen_ports: number[]
+  backend?: string
+  max_sessions?: number
+  decoy?: string
+  admin_addr?: string
+  admin_token?: string
+  users?: ZhdataUser[]
+}
 export interface Cloudflared extends InboundBasics {
   token: string
   ha_connections?: number
@@ -225,6 +244,7 @@ type InterfaceMap = {
   redirect: Redirect
   tproxy: TProxy
   cloudflared: Cloudflared
+  zhdata: Zhdata
 }
 
 // Create union type from InterfaceMap
@@ -261,6 +281,7 @@ const defaultValues: Record<InType, Inbound> = {
   redirect: <Redirect>{ type: InTypes.Redirect },
   tproxy: <TProxy>{ type: InTypes.TProxy },
   cloudflared: <Cloudflared>{ type: InTypes.Cloudflared, token: '', protocol: 'auto' },
+  zhdata: <Zhdata>{ type: InTypes.Zhdata, listen: '', listen_ports: [] as number[], backend: 'direct', admin_addr: '127.0.0.1:6070' },
 }
 
 // Secrets sing-box requires on the inbound itself (as opposed to per-client

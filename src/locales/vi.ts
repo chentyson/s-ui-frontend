@@ -311,6 +311,14 @@ export default {
       mode: "Chế độ",
       reuse: "Dùng lại kết nối",
     },
+    zhdata: {
+      ports: "Cổng",
+      backend: "Backend",
+      maxSessions: "Số phiên tối đa",
+      decoy: "Đích mồi",
+      adminAddr: "Địa chỉ quản trị",
+      adminToken: "Token quản trị",
+    },
     cloudflared: {
       token: "Token đường hầm",
       protocol: "Giao thức",

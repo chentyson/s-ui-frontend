@@ -115,6 +115,7 @@ export function shuffleConfigs(configs: Config, key?: string) {
         break
       case "vmess":
       case "vless":
+      case "zhdata":
         configs[k].uuid = RandomUtil.randomUUID()
         break
     }
@@ -160,6 +161,12 @@ export function randomConfigs(user: string): Config {
       name: user,
       uuid: uuid,
       flow: "xtls-rprx-vision",
+    },
+    // zhdata is an external core keyed by uuid; the migration in the backend
+    // copies the vless uuid across, so new clients share it too.
+    zhdata: {
+      name: user,
+      uuid: uuid,
     },
     anytls: {
       name: user,

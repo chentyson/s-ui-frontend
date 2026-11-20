@@ -311,6 +311,14 @@ export default {
       mode: "Режим",
       reuse: "Переиспользовать соединение",
     },
+    zhdata: {
+      ports: "Порты",
+      backend: "Бэкенд",
+      maxSessions: "Максимум сессий",
+      decoy: "Цель-приманка",
+      adminAddr: "Адрес админ-доступа",
+      adminToken: "Токен админ-доступа",
+    },
     cloudflared: {
       token: "Токен туннеля",
       protocol: "Протокол",
