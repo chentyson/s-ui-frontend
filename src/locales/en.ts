@@ -506,6 +506,7 @@ export default {
     multiDomain: "Multi Domain",
     remark: "Remark",
     mdOption: "Multi Domain Options",
+    deviceCount: "{n} devices",
   },
   listen: {
     options: "Listen Options",

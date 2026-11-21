@@ -495,6 +495,7 @@ export default {
     multiDomain: "Мультидомен",
     remark: "Примечание",
     mdOption: "Параметры мультидомена",
+    deviceCount: "устройств: {n}",
   },
   listen: {
     options: "Параметры прослушивания",

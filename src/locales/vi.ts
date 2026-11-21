@@ -495,6 +495,7 @@ export default {
     multiDomain: "Nhiều Tên miền",
     remark: "Ghi chú",
     mdOption: "Tùy chọn Nhiều Tên miền",
+    deviceCount: "{n} thiết bị",
   },
   listen: {
     options: "Tùy chọn Nghe",

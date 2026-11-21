@@ -495,6 +495,7 @@ export default {
     multiDomain: "دامنه چندگانه",
     remark: "شرح",
     mdOption: "گزینه‌های دامنه چندگانه",
+    deviceCount: "{n} دستگاه",
   },
   listen: {
     options: "گزینه‌های گوش‌دادن",

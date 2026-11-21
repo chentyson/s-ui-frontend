@@ -506,6 +506,7 @@ export default {
     multiDomain: "多域名",
     remark: "备注",
     mdOption: "多域名选项",
+    deviceCount: "设备 {n}",
   },
   listen: {
     options: "监听选项",

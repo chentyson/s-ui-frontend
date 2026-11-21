@@ -99,7 +99,27 @@
           <v-row>
             <v-col>{{ $t('online') }}</v-col>
             <v-col>
-              <template v-if="onlines.includes(item.tag)">
+              <!-- Badge the devices actually connected once the backend
+                   reports them; the online chip stays as the fallback for
+                   backends that only send the tag list. -->
+              <template v-if="inboundCounts[item.tag]">
+                <v-chip
+                  density="comfortable"
+                  size="small"
+                  color="success"
+                  variant="flat"
+                  link
+                  @click="showSessions(item.tag)"
+                >
+                  {{ $t('in.deviceCount', { n: inboundCounts[item.tag] }) }}
+                  <v-tooltip
+                    activator="parent"
+                    location="top"
+                    :text="$t('sessions.title')"
+                  />
+                </v-chip>
+              </template>
+              <template v-else-if="onlines.includes(item.tag)">
                 <v-chip
                   density="comfortable"
                   size="small"
@@ -231,6 +251,11 @@ const inTags = computed((): string[] => {
 
 const onlines = computed(() => {
   return Data().onlines.inbound?? []
+})
+
+// Devices per inbound tag; an older backend omits the whole map.
+const inboundCounts = computed<Record<string, number>>(() => {
+  return Data().onlines.inboundCounts ?? {}
 })
 
 const modal = ref({

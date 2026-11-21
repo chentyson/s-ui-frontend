@@ -306,6 +306,43 @@ describe('zhdata inbound backend picker', () => {
   })
 })
 
+// The inbound card badges the devices actually connected once the backend
+// adds inboundCounts to api onlines; while that field is still missing the
+// card falls back to the old online chip, and a tag nobody reports gets no
+// marker at all.
+describe('inbound card device count', () => {
+  const mountInbounds = async (onlines: Record<string, unknown>) => {
+    setActivePinia(createPinia())
+    const store = Data()
+    store.inbounds = [
+      { id: 1, type: 'socks', tag: 'socks-in', listen: '', listen_port: 1080, tls_id: 0 },
+    ]
+    store.onlines = { inbound: ['socks-in'], outbound: [], user: [], ...onlines }
+    const view = (await import('@/views/Inbounds.vue')).default
+    const wrapper = mount(view, { global: { plugins: [vuetify, i18n] } })
+    // The badge is the only chip on the card; the row label beside it is
+    // always the word "online", so assert on the chip itself.
+    return wrapper.findAllComponents({ name: 'VChip' })
+  }
+
+  it('badges the device count when the backend reports inboundCounts', async () => {
+    const chips = await mountInbounds({ inboundCounts: { 'socks-in': 4 } })
+    expect(chips).toHaveLength(1)
+    expect(chips[0].text()).toContain('4 devices')
+  })
+
+  it('falls back to the online chip when inboundCounts is missing', async () => {
+    const chips = await mountInbounds({})
+    expect(chips).toHaveLength(1)
+    expect(chips[0].text().trim()).toBe('Online')
+  })
+
+  it('shows no marker for a zero count outside the online list', async () => {
+    const chips = await mountInbounds({ inbound: [], inboundCounts: { 'socks-in': 0 } })
+    expect(chips).toHaveLength(0)
+  })
+})
+
 // Regression: the key accessors look the peer up in the endpoint's key store by
 // public key. The getters allowed for a miss, the setters did not, so editing a
 // peer the store does not know threw on keys[-1]. Vue turns that into a handled

@@ -19,6 +19,9 @@ export interface Onlines {
   user?: string[]
   userCounts?: Record<string, number>
   rejectionUsers?: string[]
+  // Devices connected per inbound tag, once the backend reports them. Until
+  // it does, readers fall back to presence in `inbound`.
+  inboundCounts?: Record<string, number>
 }
 
 // Everything the panel keeps in sync with api/load. Only `onlines`,
