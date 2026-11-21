@@ -334,6 +334,9 @@ export default {
       spread: "分散度",
       upstream: "上游",
       upstreamHint: "启用后该入站流量向这些 zhdata 服务器字节级透明转发（设备数/流量控制仍在本机生效，需 zhdata 核心 ≥0.15.2）",
+      backendAddr: "地址（host:port）",
+      socksInbounds: "面板 SOCKS 入站",
+      backendHint: "要让 zhdata 入站流量走面板出站/路由规则，先在面板建 socks 入站再在这里选它；direct=zhdata 服务器自己出网",
     },
     cloudflared: {
       token: "隧道令牌",

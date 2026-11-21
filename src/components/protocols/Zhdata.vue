@@ -53,11 +53,16 @@
         sm="6"
         md="4"
       >
-        <v-text-field
-          v-model="data.backend"
+        <!-- backend is one string the core reads: "direct" or
+             "socks <host:port>". The picker edits that string; a legacy value
+             nobody touches round-trips untouched. -->
+        <v-select
+          v-model="backendMode"
           :label="$t('types.zhdata.backend')"
-          hide-details
-          placeholder="direct"
+          :items="backendModes"
+          :hint="$t('types.zhdata.backendHint')"
+          persistent-hint
+          @update:model-value="applyBackendMode"
         />
       </v-col>
       <v-col
@@ -84,6 +89,38 @@
           hide-details
           clearable
           @click:clear="delete data.decoy"
+        />
+      </v-col>
+    </v-row>
+    <v-row v-if="backendMode == 'socks'">
+      <v-col
+        cols="12"
+        sm="6"
+        md="4"
+      >
+        <v-text-field
+          v-model="backendAddr"
+          :label="$t('types.zhdata.backendAddr')"
+          hide-details
+          placeholder="127.0.0.1:1080"
+          @update:model-value="applyBackendAddr"
+        />
+      </v-col>
+      <v-col
+        v-if="socksCandidates.length"
+        cols="12"
+        sm="6"
+        md="4"
+      >
+        <!-- The panel's own socks inbounds are the usual targets; picking one
+             fills the address with its local endpoint, and typing over the
+             field is still allowed. -->
+        <v-select
+          v-model="pickedSocks"
+          :label="$t('types.zhdata.socksInbounds')"
+          :items="socksCandidates"
+          hide-details
+          @update:model-value="pickSocks"
         />
       </v-col>
     </v-row>
@@ -137,8 +174,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import RandomUtil from '@/plugins/randomUtil'
-import { Inbound } from '@/types/inbounds'
+import { Inbound, InTypes } from '@/types/inbounds'
 import { Outbound } from '@/types/outbounds'
+import Data from '@/store/modules/data'
 
 // Inbound side of the zhdata external core (the outbound form lives in
 // ZhdataOut.vue); the shape is the core's own option names per
@@ -203,6 +241,55 @@ const maxSessions = computed({
     else data.value.max_sessions = v
   },
 })
+
+// backend is one string the core reads: "direct" or "socks <host:port>".
+// It is parsed into display state once; the string is rewritten only when a
+// control is touched, so a legacy value nobody edits round-trips untouched.
+type BackendMode = 'direct' | 'socks'
+
+function parseBackend(raw: unknown): { mode: BackendMode, addr: string } {
+  const value = String(raw ?? 'direct').trim()
+  if (value === '' || value === 'direct') return { mode: 'direct', addr: '' }
+  const socks = value.match(/^socks(?:\s+(.*))?$/i)
+  if (socks) return { mode: 'socks', addr: (socks[1] ?? '').trim() }
+  // Any other non-direct string reads as an address; the old string is kept
+  // verbatim until one of the fields rewrites it.
+  return { mode: 'socks', addr: value }
+}
+
+const backendParsed = parseBackend(data.value.backend)
+const backendMode = ref<BackendMode>(backendParsed.mode)
+const backendAddr = ref(backendParsed.addr)
+const pickedSocks = ref('')
+
+const backendModes = [
+  { title: 'direct', value: 'direct' },
+  { title: 'socks', value: 'socks' },
+]
+
+// The panel's own socks inbounds, labelled by tag and port.
+const socksCandidates = computed(() =>
+  (Data().inbounds ?? [])
+    .filter(inbound => inbound.type === InTypes.SOCKS)
+    .map(inbound => ({
+      title: `${inbound.tag} (${inbound.listen_port})`,
+      value: `127.0.0.1:${inbound.listen_port}`,
+    }))
+)
+
+function applyBackendMode(mode: unknown) {
+  data.value.backend = mode === 'socks' ? `socks ${backendAddr.value}`.trim() : 'direct'
+}
+
+function applyBackendAddr(addr: string | null) {
+  data.value.backend = `socks ${addr ?? ''}`.trim()
+}
+
+function pickSocks(addr: unknown) {
+  if (typeof addr !== 'string' || !addr) return
+  backendAddr.value = addr
+  data.value.backend = `socks ${addr}`
+}
 
 function generateAdminToken() {
   data.value.admin_token = RandomUtil.randomSeq(32)

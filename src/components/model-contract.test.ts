@@ -5,6 +5,7 @@ import * as vuetifyComponents from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import { createPinia, setActivePinia } from 'pinia'
 import { i18n } from '@/locales'
+import Data from '@/store/modules/data'
 import type { Component } from 'vue'
 
 // No test here should reach the network or raise a toast.
@@ -240,6 +241,68 @@ describe('zhdata inbound upstream parsing', () => {
     await input?.setValue('1.2.3.4:49888')
     await input?.setValue('')
     expect(owned.upstream).toBeUndefined()
+  })
+})
+
+// backend is one string the core reads: "direct" or "socks <addr>". The
+// picker rewrites that string only when a control is touched, so legacy
+// values — "direct", "socks <addr>", or an older bare address — round-trip
+// untouched until the operator edits a field.
+describe('zhdata inbound backend picker', () => {
+  const mountZhdata = async (backend: unknown, load?: () => void) => {
+    setActivePinia(createPinia())
+    load?.()
+    const component = (await import('./protocols/Zhdata.vue')).default
+    const owned: { type: string, listen: string, listen_ports: number[], backend?: unknown } =
+      { type: 'zhdata', listen: '', listen_ports: [49888] }
+    if (backend !== undefined) owned.backend = backend
+    const wrapper = mount(component, {
+      props: { data: owned, direction: 'in' },
+      global: { plugins: [vuetify, i18n] },
+    })
+    const addrField = wrapper.findAllComponents({ name: 'VTextField' })
+      .find(f => f.props('placeholder') === '127.0.0.1:1080')
+    return { wrapper, owned, addrField }
+  }
+
+  it('offers direct and socks, and switching rewrites the string', async () => {
+    const { wrapper, owned } = await mountZhdata('direct')
+    const backendSelect = wrapper.findAllComponents({ name: 'VSelect' })[0]
+    expect(backendSelect.props('items')).toEqual([
+      { title: 'direct', value: 'direct' },
+      { title: 'socks', value: 'socks' },
+    ])
+    await backendSelect.vm.$emit('update:modelValue', 'socks')
+    expect(owned.backend).toBe('socks')
+    await backendSelect.vm.$emit('update:modelValue', 'direct')
+    expect(owned.backend).toBe('direct')
+  })
+
+  it('echoes a legacy "socks <addr>" value into the fields without rewriting', async () => {
+    const { wrapper, owned, addrField } = await mountZhdata('socks 1.2.3.4:8080')
+    expect(wrapper.findAllComponents({ name: 'VSelect' })[0].props('modelValue')).toBe('socks')
+    expect(addrField?.props('modelValue')).toBe('1.2.3.4:8080')
+    expect(owned.backend).toBe('socks 1.2.3.4:8080')
+  })
+
+  it('treats an unknown legacy string as an address and canonicalizes it on edit', async () => {
+    const { owned, addrField } = await mountZhdata('127.0.0.1:1080')
+    expect(owned.backend).toBe('127.0.0.1:1080')
+    await addrField?.find('input').setValue('10.0.0.1:1080')
+    expect(owned.backend).toBe('socks 10.0.0.1:1080')
+  })
+
+  it('lists the panel\'s socks inbounds and fills the address on pick', async () => {
+    const { wrapper, owned } = await mountZhdata('socks', () => {
+      Data().inbounds = [
+        { id: 1, type: 'socks', tag: 'socks-1080', listen: '', listen_port: 1080, tls_id: 0 },
+        { id: 2, type: 'zhdata', tag: 'zhdata-in', listen: '', listen_port: 0, tls_id: 0, listen_ports: [] },
+      ]
+    })
+    const candidates = wrapper.findAllComponents({ name: 'VSelect' })[1]
+    expect(candidates.props('items')).toEqual([{ title: 'socks-1080 (1080)', value: '127.0.0.1:1080' }])
+    await candidates.vm.$emit('update:modelValue', '127.0.0.1:1080')
+    expect(owned.backend).toBe('socks 127.0.0.1:1080')
   })
 })
 

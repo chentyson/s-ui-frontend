@@ -323,6 +323,9 @@ export default {
       spread: "Độ phân tán",
       upstream: "Upstream",
       upstreamHint: "Khi bật, inbound này chuyển tiếp nguyên vẹn từng byte lưu lượng tới các máy chủ zhdata; giới hạn thiết bị và thống kê lưu lượng vẫn áp dụng trên máy này. Yêu cầu lõi zhdata ≥0.15.2",
+      backendAddr: "Địa chỉ (host:port)",
+      socksInbounds: "Inbound SOCKS của panel",
+      backendHint: "Để lưu lượng zhdata inbound đi qua outbound và quy tắc định tuyến của panel, hãy tạo inbound SOCKS trong panel trước rồi chọn ở đây; direct = máy chủ zhdata tự ra internet",
     },
     cloudflared: {
       token: "Token đường hầm",

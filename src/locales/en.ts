@@ -334,6 +334,9 @@ export default {
       spread: "Spread",
       upstream: "Upstream",
       upstreamHint: "When set, this inbound forwards its traffic byte-for-byte to these zhdata servers. Device limits and traffic counters still apply on this machine. Requires zhdata core 0.15.2+",
+      backendAddr: "Address (host:port)",
+      socksInbounds: "Panel SOCKS inbounds",
+      backendHint: "To route zhdata inbound traffic through the panel's outbounds and routing rules, create a SOCKS inbound in the panel first and pick it here. direct: the zhdata server dials out on its own.",
     },
     cloudflared: {
       token: "Tunnel Token",
