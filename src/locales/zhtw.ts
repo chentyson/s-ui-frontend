@@ -327,6 +327,11 @@ export default {
       decoy: "誘餌目標",
       adminAddr: "管理位址",
       adminToken: "管理權杖",
+      uuid: "UUID",
+      conns: "連線數",
+      spread: "分散度",
+      upstream: "上游",
+      upstreamHint: "啟用後該入站流量以位元組級透明轉送至這些 zhdata 伺服器（裝置數/流量控制仍在本機生效，需 zhdata 核心 ≥0.15.2）",
     },
     cloudflared: {
       token: "通道權杖",

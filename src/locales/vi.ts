@@ -318,6 +318,11 @@ export default {
       decoy: "Đích mồi",
       adminAddr: "Địa chỉ quản trị",
       adminToken: "Token quản trị",
+      uuid: "UUID",
+      conns: "Số kết nối",
+      spread: "Độ phân tán",
+      upstream: "Upstream",
+      upstreamHint: "Khi bật, inbound này chuyển tiếp nguyên vẹn từng byte lưu lượng tới các máy chủ zhdata; giới hạn thiết bị và thống kê lưu lượng vẫn áp dụng trên máy này. Yêu cầu lõi zhdata ≥0.15.2",
     },
     cloudflared: {
       token: "Token đường hầm",

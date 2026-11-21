@@ -104,6 +104,8 @@ const cases: Case[] = [
     model: () => ({ type: 'wireguard', address: ['10.0.0.2/32'], private_key: 'seed', listen_port: 51820, mtu: 1420, peers: [], ext: { public_key: 'seed', keys: [] } }) },
   { name: 'protocols/Zhdata', load: () => import('./protocols/Zhdata.vue'),
     model: () => ({ type: 'zhdata', listen: '', listen_ports: [49888, 49889], backend: 'direct', admin_addr: '127.0.0.1:6070', admin_token: 'seed' }), props: { direction: 'in' } },
+  { name: 'protocols/ZhdataOut', load: () => import('./protocols/ZhdataOut.vue'),
+    model: () => ({ type: 'zhdata', server: 'seed.example', server_port: 49888, uuid: 'seed-uuid', conns: 16, spread: 8 }) },
 
   { name: 'services/Api', load: () => import('./services/Api.vue'),
     model: () => ({ type: 'api', secret: 'seed', external_controller: 'seed' }) },
@@ -206,6 +208,38 @@ describe('components write through to the object their parent owns', () => {
       }
     }
     expect(reached, 'editing this form never reached the parent object').toBe(true)
+  })
+})
+
+// The zhdata inbound forwards byte-level to upstream servers only when the
+// option carries well-formed "host:port" entries; emptying the box must drop
+// the key entirely so the core sees the feature as disabled.
+describe('zhdata inbound upstream parsing', () => {
+  const mountZhdata = async () => {
+    setActivePinia(createPinia())
+    const component = (await import('./protocols/Zhdata.vue')).default
+    const owned: { type: string, listen: string, listen_ports: number[], upstream?: string[] } =
+      { type: 'zhdata', listen: '', listen_ports: [49888] }
+    const wrapper = mount(component, {
+      props: { data: owned, direction: 'in' },
+      global: { plugins: [vuetify, i18n] },
+    })
+    const field = wrapper.findAllComponents({ name: 'VTextField' })
+      .find(f => String(f.props('placeholder') ?? '').startsWith('1.2.3.4'))
+    return { owned, input: field?.find('input') }
+  }
+
+  it('keeps well-formed entries and drops the rest', async () => {
+    const { owned, input } = await mountZhdata()
+    await input?.setValue('1.2.3.4:49888, 5.6.7.8:50000 garbage [::1]:6000 9.9.9.9:70000')
+    expect(owned.upstream).toEqual(['1.2.3.4:49888', '5.6.7.8:50000', '[::1]:6000'])
+  })
+
+  it('removes the key when the box is emptied', async () => {
+    const { owned, input } = await mountZhdata()
+    await input?.setValue('1.2.3.4:49888')
+    await input?.setValue('')
+    expect(owned.upstream).toBeUndefined()
   })
 })
 

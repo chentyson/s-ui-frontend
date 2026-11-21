@@ -118,6 +118,19 @@ describe('zhdata', () => {
     expect(second.listen_ports).toEqual([])
   })
 
+  it('omits the upstream key for a fresh zhdata inbound', () => {
+    const zhdata = createInbound(InTypes.Zhdata) as { upstream?: string[] }
+    expect(zhdata.upstream).toBeUndefined()
+  })
+
+  it('gives zhdata outbound the frozen defaults', () => {
+    const made = createOutbound(OutTypes.Zhdata) as { type?: string, uuid?: string, conns?: number, spread?: number }
+    expect(made.type).toBe('zhdata')
+    expect(made.uuid).toBe('')
+    expect(made.conns).toBe(16)
+    expect(made.spread).toBe(8)
+  })
+
   it('gives every client a zhdata uuid alongside the vless one', () => {
     const configs = randomConfigs('alice')
     expect(configs.zhdata?.name).toBe('alice')

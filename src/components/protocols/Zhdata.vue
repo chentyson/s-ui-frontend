@@ -116,6 +116,21 @@
         />
       </v-col>
     </v-row>
+    <v-row>
+      <v-col cols="12">
+        <!-- Comma-separated host:port list. The raw text stays editable while
+             typing; only well-formed entries reach the options. An empty list
+             drops the key entirely, which is the core's "disabled" state. -->
+        <v-text-field
+          v-model="upstreamText"
+          :label="$t('types.zhdata.upstream')"
+          :hint="$t('types.zhdata.upstreamHint')"
+          persistent-hint
+          placeholder="1.2.3.4:49888, 1.2.3.4:49889"
+          @update:model-value="commitUpstream"
+        />
+      </v-col>
+    </v-row>
   </v-card>
 </template>
 
@@ -125,8 +140,9 @@ import RandomUtil from '@/plugins/randomUtil'
 import { Inbound } from '@/types/inbounds'
 import { Outbound } from '@/types/outbounds'
 
-// zhdata is inbound-only (external core); the shape is the core's own option
-// names per docs/zhdata-admin-api.md §2.
+// Inbound side of the zhdata external core (the outbound form lives in
+// ZhdataOut.vue); the shape is the core's own option names per
+// docs/zhdata-admin-api.md §2.
 interface ZhdataData {
   listen: string
   listen_ports: number[]
@@ -135,6 +151,7 @@ interface ZhdataData {
   decoy?: string
   admin_addr?: string
   admin_token?: string
+  upstream?: string[]
 }
 
 // The parent owns the object and this component edits it in place, so it is a
@@ -153,7 +170,8 @@ defineProps<{
 // Comma or space separated entries; "a-b" expands to the closed range.
 function parsePorts(text: string): number[] {
   const ports = new Set<number>()
-  for (const token of text.split(/[,\s]+/)) {    if (!token) continue
+  for (const token of text.split(/[,\s]+/)) {
+    if (!token) continue
     const range = token.match(/^(\d+)\s*-\s*(\d+)$/)
     if (range) {
       const start = Number(range[1])
@@ -188,5 +206,32 @@ const maxSessions = computed({
 
 function generateAdminToken() {
   data.value.admin_token = RandomUtil.randomSeq(32)
+}
+
+// host:port entries (bracketed IPv6 hosts allowed), deduped in input order.
+function parseUpstream(text: string): string[] {
+  const list: string[] = []
+  const seen = new Set<string>()
+  for (const token of text.split(/[,\s]+/)) {
+    if (!token) continue
+    const entry = token.match(/^(\[[0-9a-fA-F:.]+\]|[^:\s,[\]]+):(\d{1,5})$/)
+    if (!entry) continue
+    const port = Number(entry[2])
+    if (port < 1 || port > 65535) continue
+    const hostPort = `${entry[1]}:${port}`
+    if (!seen.has(hostPort)) {
+      seen.add(hostPort)
+      list.push(hostPort)
+    }
+  }
+  return list
+}
+
+const upstreamText = ref((data.value.upstream ?? []).join(', '))
+
+function commitUpstream(text: string | null) {
+  const list = parseUpstream(text ?? '')
+  if (list.length) data.value.upstream = list
+  else delete data.value.upstream // missing = upstream off for the core
 }
 </script>

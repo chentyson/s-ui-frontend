@@ -162,6 +162,10 @@
                 :data="outbound"
                 :tags="tags"
               />
+              <ZhdataOut
+                v-if="outbound.type == outTypes.Zhdata"
+                :data="outbound"
+              />
 
               <Transport
                 v-if="Object.hasOwn(outbound,'transport')"
@@ -221,6 +225,7 @@
           color="primary"
           variant="tonal"
           :loading="loading"
+          :disabled="!validate"
           @click="saveChanges"
         >
           {{ $t('actions.save') }}
@@ -256,6 +261,7 @@ import Tor from '@/components/protocols/Tor.vue'
 import Ssh from '@/components/protocols/Ssh.vue'
 import Selector from '@/components/protocols/Selector.vue'
 import UrlTest from '@/components/protocols/UrlTest.vue'
+import ZhdataOut from '@/components/protocols/ZhdataOut.vue'
 import HttpUtils from '@/plugins/httputil'
 import AnyTls from '@/components/protocols/AnyTls.vue'
 import Data from '@/store/modules/data'
@@ -263,7 +269,7 @@ export default {
   components: { DocLink, Dial, Multiplex, Transport, OutTLS,
     Socks, Http, Shadowsocks, Vmess, Trojan,
     Hysteria, Naive, ShadowTls, Vless, Tuic,
-    Hysteria2, AnyTls, Tor, Ssh, Selector, UrlTest, Snell, Bridge },
+    Hysteria2, AnyTls, Tor, Ssh, Selector, UrlTest, Snell, Bridge, ZhdataOut },
   props: {
     visible: { type: Boolean, required: true },
     // A JSON string of the outbound being edited, empty when adding a new one.
@@ -283,6 +289,19 @@ export default {
       NoDial: [OutTypes.Selector, OutTypes.URLTest],
       NoServer: [OutTypes.Direct, OutTypes.Selector, OutTypes.URLTest, OutTypes.Tor],
     }
+  },
+  computed: {
+    // So far no outbound blocked a save; zhdata cannot start without its
+    // target and its uuid, so gate the button rather than fail at the core.
+    validate() {
+      if (this.outbound == undefined) return false
+      if (this.outbound.type != OutTypes.Zhdata) return true
+      if (!this.outbound.server) return false
+      const port = Number(this.outbound.server_port)
+      if (!(port >= 1 && port <= 65535)) return false
+      if (!this.outbound.uuid) return false
+      return true
+    },
   },
   watch: {
     visible(newValue) {

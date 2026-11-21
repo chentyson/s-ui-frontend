@@ -206,6 +206,9 @@ export interface Zhdata extends InboundBasics {
   decoy?: string
   admin_addr?: string
   admin_token?: string
+  // Byte-level transparent forwarding to upstream zhdata servers, as
+  // "host:port" entries. Missing or empty = disabled (zhdata core ≥0.15.2).
+  upstream?: string[]
   users?: ZhdataUser[]
 }
 export interface Cloudflared extends InboundBasics {

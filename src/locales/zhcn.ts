@@ -329,6 +329,11 @@ export default {
       decoy: "诱饵目标",
       adminAddr: "管理地址",
       adminToken: "管理令牌",
+      uuid: "UUID",
+      conns: "连接数",
+      spread: "分散度",
+      upstream: "上游",
+      upstreamHint: "启用后该入站流量向这些 zhdata 服务器字节级透明转发（设备数/流量控制仍在本机生效，需 zhdata 核心 ≥0.15.2）",
     },
     cloudflared: {
       token: "隧道令牌",

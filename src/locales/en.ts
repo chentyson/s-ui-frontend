@@ -329,6 +329,11 @@ export default {
       decoy: "Decoy",
       adminAddr: "Admin Address",
       adminToken: "Admin Token",
+      uuid: "UUID",
+      conns: "Connections",
+      spread: "Spread",
+      upstream: "Upstream",
+      upstreamHint: "When set, this inbound forwards its traffic byte-for-byte to these zhdata servers. Device limits and traffic counters still apply on this machine. Requires zhdata core 0.15.2+",
     },
     cloudflared: {
       token: "Tunnel Token",

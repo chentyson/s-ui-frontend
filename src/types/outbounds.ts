@@ -24,6 +24,7 @@ export const OutTypes = {
   Selector: 'selector',
   URLTest: 'urltest',
   Bridge: 'bridge',
+  Zhdata: 'zhdata',
 }
 
 type OutType = typeof OutTypes[keyof typeof OutTypes]
@@ -249,6 +250,16 @@ export interface URLTest extends OutboundBasics {
   interrupt_exist_connections?: boolean
 }
 
+// zhdata outbound: dials a zhdata server with a client uuid. conns/spread are
+// the core's connection-pool knobs (field names frozen with the Go side).
+export interface Zhdata extends OutboundBasics, Dial {
+  server: string
+  server_port: number
+  uuid: string
+  conns?: number
+  spread?: number
+}
+
 // Create interfaces dynamically based on OutTypes keys
 type InterfaceMap = {
   [Key in keyof typeof OutTypes]: {
@@ -289,6 +300,7 @@ const defaultValues: Record<OutType, Outbound> = {
   ssh: { type: OutTypes.SSH },
   selector: { type: OutTypes.Selector },
   urltest: { type: OutTypes.URLTest },
+  zhdata: { type: OutTypes.Zhdata, uuid: '', conns: 16, spread: 8 },
 }
 
 export function createOutbound<T extends Outbound>(type: string,json?: Partial<T>): Outbound {
