@@ -26,6 +26,41 @@
     >
       {{ $t('setting.maintenance') }}
     </v-chip>
+    <!-- zhdata runs as its own processes; when the panel's admin probes
+         flag one, an operator on any other page has to see that a zhdata
+         inbound is not working before clients complain. Nothing shows
+         without zhdata inbounds, and nothing shows while they are all
+         healthy. -->
+    <v-chip
+      v-if="zhdataProblems.length > 0"
+      color="error"
+      variant="flat"
+      density="comfortable"
+      prepend-icon="mdi-alert-decagram"
+      class="mr-2"
+    >
+      {{ $t('types.zhdata.healthSummary', { bad: zhdataProblems.length, total: zhdataTotal }) }}
+      <v-tooltip
+        activator="parent"
+        location="bottom"
+        max-width="420"
+      >
+        <template
+          v-for="h in zhdataProblems"
+          :key="h.tag"
+        >
+          <div dir="ltr"><b>{{ h.tag }}</b></div>
+          <div
+            v-for="(w, wi) in h.warnings ?? []"
+            :key="h.tag + ':' + wi"
+          >{{ w.detail }}</div>
+          <div
+            v-if="h.lastError"
+            dir="ltr"
+          >{{ $t('types.zhdata.healthLastError') }}: {{ h.lastError }}</div>
+        </template>
+      </v-tooltip>
+    </v-chip>
     <v-btn
       v-tooltip="$t('donate')"
       icon
@@ -93,6 +128,7 @@ import { languages } from '@/locales'
 import { useThemeSwitcher } from '@/composables/useThemeSwitcher'
 import { computed } from 'vue'
 import Data from '@/store/modules/data'
+import type { ZhdataHealth } from '@/store/modules/data'
 
 defineProps<{ isMobile: boolean }>()
 defineEmits<{ toggleDrawer: [] }>()
@@ -110,4 +146,9 @@ const changeLocale = (l: string) => {
 }
 const isActiveLocale = (l: string) => i18nLocale.value === l
 const maintenance = computed((): boolean => Data().maintenance)
+// zhdata health rides the same poll as maintenance, so the count -- how many
+// of the panel's zhdata processes the probes flag -- belongs here too, not
+// only on the inbounds page where the cards already show it.
+const zhdataTotal = computed((): number => Data().zhdataHealth.length)
+const zhdataProblems = computed((): ZhdataHealth[] => Data().zhdataProblems)
 </script>

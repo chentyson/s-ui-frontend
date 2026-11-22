@@ -326,6 +326,11 @@ export default {
       backendAddr: "Адрес (host:port)",
       socksInbounds: "SOCKS-входы панели",
       backendHint: "Чтобы трафик zhdata шёл через исходящие и правила маршрутизации панели, сначала создайте SOCKS-вход в панели и выберите его здесь; direct — zhdata-сервер выходит в сеть сам",
+      healthOk: "ядро {v} · отправлено {n} польз.",
+      healthUnhealthy: "не в порядке",
+      healthSummary: "zhdata: {bad}/{total} с проблемами",
+      healthLastError: "последняя ошибка",
+      healthKeyMismatch: "отправлено {p} / панель {m} / ядро {k}",
     },
     cloudflared: {
       token: "Токен туннеля",

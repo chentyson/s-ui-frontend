@@ -24,12 +24,60 @@ export interface Onlines {
   inboundCounts?: Record<string, number>
 }
 
+// zhdata runs as its own processes outside the embedded core, so the panel --
+// which drives every one of their admin calls anyway -- is the only thing that
+// can tell whether they are up and whether the users it pushed actually got
+// in. The backend samples those calls and reports the outcome per zhdata
+// inbound; an empty array means there is no zhdata inbounds, and then nothing
+// is shown. (docs/zhdata-admin-api.md, service/zhdata.go in the panel.)
+export interface ZhdataUserSource {
+  path: string
+  // Keys this -users source yielded at the core's last reload.
+  keys: number
+  // Why the core could not read this source. A wrong path keeps the process
+  // running on the sources that did load, so this is the only trace.
+  lastError?: string
+  at?: number
+}
+
+export interface ZhdataWarning {
+  code: 'down' | 'user_source' | 'key_mismatch' | 'bad_options' | 'no_admin_addr'
+  // The sentence to display: the backend words it (English or Chinese, per
+  // its own locale) and the UI renders it as-is; code is only for logic.
+  detail: string
+}
+
+export interface ZhdataHealth {
+  // The zhdata inbound this process was started for -- the join key.
+  tag: string
+  adminAddr?: string
+  reachable?: boolean
+  version?: string
+  // The three user counts meant to be compared: what the panel last pushed,
+  // what it thinks it serves, and what the core says it actually holds. A
+  // core below the panel count is a push that did not stick.
+  pushedUsers?: number
+  panelUsers?: number
+  coreKeys?: number
+  // The core's -users sources, reported only by zhdata >= 0.15.4; older
+  // cores leave them out, which by itself is not a problem.
+  userSources?: ZhdataUserSource[]
+  // The admin call that failed last, already prefixed with which one it was.
+  lastError?: string
+  lastOkAt?: number
+  lastErrAt?: number
+  warnings?: ZhdataWarning[]
+}
+
 // Everything the panel keeps in sync with api/load. Only `onlines`,
 // `maintenance` and sometimes `lastLog` ride on every poll; the rest is sent
 // only when something actually changed since the last one, which is why every
 // field here is optional and setNewData tests for presence before assigning.
 export interface LoadedData {
   onlines?: Onlines
+  // Rides the same 10 s poll (the live probe behind it is throttled in the
+  // backend); GET api/zhdataHealth answers with the same array as obj.
+  zhdataHealth?: ZhdataHealth[]
   maintenance?: boolean
   lastLog?: string
   subURI?: string
@@ -59,6 +107,7 @@ const Data = defineStore('Data', {
     // say so, not just the one that turned it on.
     maintenance: false,
     onlines: <Onlines>{inbound: [], outbound: [], user: []},
+    zhdataHealth: <ZhdataHealth[]>[],
     config: <Config>{},
     inbounds: <Inbound[]>[],
     outbounds: <Outbound[]>[],
@@ -67,6 +116,20 @@ const Data = defineStore('Data', {
     clients: <Client[]>[],
     tlsConfigs: <tls[]>[],
   }),
+  getters: {
+    // The health array arrives ordered with the inbounds, while every card
+    // wants its own entry; key it by tag once per poll instead of scanning
+    // the array per card (same role inboundCounts plays for the cards).
+    zhdataByTag(state): Map<string, ZhdataHealth> {
+      return new Map(state.zhdataHealth.map(h => [h.tag, h]))
+    },
+    // The entries worth warning about anywhere in the panel. The backend
+    // flags a dead process with a warning, but reachable === false without
+    // one must still not read as healthy.
+    zhdataProblems(state): ZhdataHealth[] {
+      return state.zhdataHealth.filter(h => h.reachable === false || (h.warnings?.length ?? 0) > 0)
+    },
+  },
   actions: {
     async loadData() {
       const msg = await HttpUtils.get<LoadedData>('api/load', this.lastLoad >0 ? {lu: this.lastLoad} : {} )
@@ -101,6 +164,7 @@ const Data = defineStore('Data', {
       if (Object.hasOwn(data, 'services')) this.services = data.services ?? []
       if (Object.hasOwn(data, 'endpoints')) this.endpoints = data.endpoints ?? []
       if (Object.hasOwn(data, 'tls')) this.tlsConfigs = data.tls ?? []
+      if (Object.hasOwn(data, 'zhdataHealth')) this.zhdataHealth = data.zhdataHealth ?? []
     },
     async loadInbounds(ids: number[]): Promise<Inbound[]> {
       const options = ids.length > 0 ? {id: ids.join(",")} : {}

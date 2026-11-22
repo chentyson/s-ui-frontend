@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import Data, { type LoadedData } from './data'
+import Data, { type LoadedData, type ZhdataHealth } from './data'
 
 // checkTag and checkClientName raise a toast on a clash, which needs a mounted
 // Vue app. The tests care about the verdict, not the toast.
@@ -83,6 +83,61 @@ describe('setNewData and enableTraffic', () => {
     store.setNewData({ enableTraffic: true } as LoadedData)
     store.setNewData({} as LoadedData)
     expect(store.enableTraffic).toBe(true)
+  })
+})
+
+// zhdataHealth rides the load poll like everything else: absent means
+// "unchanged", an explicit empty array means "no zhdata inbounds". Views
+// never scan the array -- the store is what keys it by tag and singles out
+// the entries that deserve a warning anywhere in the panel.
+describe('zhdata health intake and lookup', () => {
+  const entry = (tag: string, over: Partial<ZhdataHealth> = {}): ZhdataHealth => ({
+    tag, adminAddr: '127.0.0.1:6070', reachable: true, version: '0.15.4',
+    pushedUsers: 2, panelUsers: 2, coreKeys: 2, warnings: [], ...over,
+  })
+
+  it('is empty until the backend reports zhdata inbounds', () => {
+    const store = Data()
+    expect(store.zhdataHealth).toEqual([])
+    expect(store.zhdataByTag.size).toBe(0)
+    expect(store.zhdataProblems).toEqual([])
+  })
+
+  it('keeps the last health when the poll omits the key', () => {
+    const store = Data()
+    store.setNewData({ zhdataHealth: [entry('ZH-1')] } as LoadedData)
+    store.setNewData({ onlines: { inbound: [], outbound: [], user: [] } } as LoadedData)
+    expect(store.zhdataHealth.map(h => h.tag)).toEqual(['ZH-1'])
+  })
+
+  it('takes an explicit empty array as "no zhdata inbounds"', () => {
+    const store = Data()
+    store.setNewData({ zhdataHealth: [entry('ZH-1')] } as LoadedData)
+    store.setNewData({ zhdataHealth: [] } as LoadedData)
+    expect(store.zhdataHealth).toEqual([])
+    expect(store.zhdataProblems).toEqual([])
+  })
+
+  it('keys entries by tag so a card can look its own up', () => {
+    const store = Data()
+    store.setNewData({
+      zhdataHealth: [entry('ZH-1'), entry('ZH-2', { adminAddr: '127.0.0.1:6071' })],
+    } as LoadedData)
+    expect(store.zhdataByTag.get('ZH-2')?.adminAddr).toBe('127.0.0.1:6071')
+    expect(store.zhdataByTag.get('ZH-MISSING')).toBeUndefined()
+  })
+
+  it('flags warning-carrying and unreachable entries, not healthy ones', () => {
+    const store = Data()
+    store.setNewData({
+      zhdataHealth: [
+        entry('ZH-OK'),
+        entry('ZH-WARN', { warnings: [{ code: 'key_mismatch', detail: 'core serves fewer keys than the panel pushed' }] }),
+        // Reachable false without a warning yet must still not read healthy.
+        entry('ZH-DOWN', { reachable: false, warnings: [] }),
+      ],
+    } as LoadedData)
+    expect(store.zhdataProblems.map(h => h.tag)).toEqual(['ZH-WARN', 'ZH-DOWN'])
   })
 })
 

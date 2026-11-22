@@ -326,6 +326,11 @@ export default {
       backendAddr: "Địa chỉ (host:port)",
       socksInbounds: "Inbound SOCKS của panel",
       backendHint: "Để lưu lượng zhdata inbound đi qua outbound và quy tắc định tuyến của panel, hãy tạo inbound SOCKS trong panel trước rồi chọn ở đây; direct = máy chủ zhdata tự ra internet",
+      healthOk: "lõi {v} · đã đẩy {n} người dùng",
+      healthUnhealthy: "bất thường",
+      healthSummary: "zhdata: {bad}/{total} bất thường",
+      healthLastError: "lỗi gần nhất",
+      healthKeyMismatch: "đã đẩy {p} / panel {m} / lõi {k}",
     },
     cloudflared: {
       token: "Token đường hầm",

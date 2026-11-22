@@ -337,6 +337,11 @@ export default {
       backendAddr: "Address (host:port)",
       socksInbounds: "Panel SOCKS inbounds",
       backendHint: "To route zhdata inbound traffic through the panel's outbounds and routing rules, create a SOCKS inbound in the panel first and pick it here. direct: the zhdata server dials out on its own.",
+      healthOk: "core {v} · {n} users pushed",
+      healthUnhealthy: "unhealthy",
+      healthSummary: "zhdata: {bad}/{total} unhealthy",
+      healthLastError: "last error",
+      healthKeyMismatch: "pushed {p} / panel {m} / core {k}",
     },
     cloudflared: {
       token: "Tunnel Token",

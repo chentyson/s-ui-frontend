@@ -6,6 +6,7 @@ import * as directives from 'vuetify/directives'
 import { createPinia, setActivePinia } from 'pinia'
 import { i18n } from '@/locales'
 import Data from '@/store/modules/data'
+import type { ZhdataHealth } from '@/store/modules/data'
 import type { Component } from 'vue'
 
 // No test here should reach the network or raise a toast.
@@ -340,6 +341,81 @@ describe('inbound card device count', () => {
   it('shows no marker for a zero count outside the online list', async () => {
     const chips = await mountInbounds({ inbound: [], inboundCounts: { 'socks-in': 0 } })
     expect(chips).toHaveLength(0)
+  })
+})
+
+// zhdata runs as its own process, so what a zhdata card can say about it comes
+// from the panel's admin probes (api/load zhdataHealth): a success chip with
+// the core version and the pushed user count while the process is clean, an
+// error chip whose tooltip spells out warnings, the admin address, the last
+// failed call and the core's user sources when it is not, and -- as before --
+// no marker at all when the backend sends no health for the tag.
+describe('zhdata inbound health chip', () => {
+  const healthy: ZhdataHealth = {
+    tag: 'C498-ZH', adminAddr: '127.0.0.1:6070', reachable: true, version: '0.15.4',
+    pushedUsers: 2, panelUsers: 2, coreKeys: 2, lastOkAt: 1795350000, warnings: [],
+  }
+  const broken: ZhdataHealth = {
+    tag: 'C498-ZH', adminAddr: '127.0.0.1:6070', reachable: false,
+    pushedUsers: 2, panelUsers: 2, coreKeys: 1,
+    userSources: [
+      { path: '/opt/zhdata/users.txt', keys: 1, at: 1795350000 },
+      { path: '/etc/s-ui/private/s-ui.db', keys: 0, lastError: 'no such file or directory', at: 1795350000 },
+    ],
+    lastError: 'users: Get "http://127.0.0.1:6070/v1/users": dial refused',
+    lastErrAt: 1795350010,
+    warnings: [
+      { code: 'down', detail: 'the zhdata process at 127.0.0.1:6070 is not answering' },
+      { code: 'user_source', detail: 'a -users source of the core failed to load' },
+    ],
+  }
+
+  const mountZh = async (zhdataHealth?: ZhdataHealth[]) => {
+    setActivePinia(createPinia())
+    // VTooltip content is rendered eagerly and teleports into document.body,
+    // where it would otherwise linger for the next test from this mount.
+    document.body.innerHTML = ''
+    const store = Data()
+    store.inbounds = [
+      { id: 1, type: 'zhdata', tag: 'C498-ZH', listen: '', listen_port: 0, tls_id: 0, listen_ports: [] },
+    ]
+    store.onlines = { inbound: [], outbound: [], user: [] }
+    store.zhdataHealth = zhdataHealth ?? []
+    const view = (await import('@/views/Inbounds.vue')).default
+    const wrapper = mount(view, { global: { plugins: [vuetify, i18n] } })
+    return { wrapper, chips: wrapper.findAllComponents({ name: 'VChip' }) }
+  }
+
+  it('badges a healthy core with its version and pushed user count', async () => {
+    const { wrapper, chips } = await mountZh([healthy])
+    expect(chips).toHaveLength(1)
+    expect(chips[0].text()).toContain('core 0.15.4')
+    expect(chips[0].text()).toContain('2 users')
+    wrapper.unmount()
+  })
+
+  it('shows an unhealthy chip whose tooltip spells out the probe outcome', async () => {
+    const { wrapper, chips } = await mountZh([broken])
+    expect(chips).toHaveLength(1)
+    expect(chips[0].text()).toContain('unhealthy')
+    // The tooltip teleports into document.body, so read the detail lines
+    // from there: warnings, admin address, last failed call, user sources,
+    // and the pushed/panel/core mismatch line (core 1 below panel 2).
+    const lines = document.body.textContent ?? ''
+    expect(lines).toContain('the zhdata process at 127.0.0.1:6070 is not answering')
+    expect(lines).toContain('a -users source of the core failed to load')
+    expect(lines).toContain('Admin Address: 127.0.0.1:6070')
+    expect(lines).toContain('dial refused')
+    expect(lines).toContain('/opt/zhdata/users.txt')
+    expect(lines).toContain('no such file or directory')
+    expect(lines).toContain('pushed 2 / panel 2 / core 1')
+    wrapper.unmount()
+  })
+
+  it('keeps the old card when the backend reports no health for the tag', async () => {
+    const { wrapper, chips } = await mountZh()
+    expect(chips).toHaveLength(0)
+    wrapper.unmount()
   })
 })
 

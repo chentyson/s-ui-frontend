@@ -335,6 +335,11 @@ export default {
       backendAddr: "位址（host:port）",
       socksInbounds: "面板 SOCKS 入站",
       backendHint: "要讓 zhdata 入站流量走面板出站/路由規則，請先在面板建立 socks 入站，再於此處選取；direct=zhdata 伺服器自行出網",
+      healthOk: "核心 {v} · 已推送 {n} 使用者",
+      healthUnhealthy: "異常",
+      healthSummary: "zhdata：{bad}/{total} 異常",
+      healthLastError: "最近錯誤",
+      healthKeyMismatch: "已推送 {p} / 面板 {m} / 核心 {k}",
     },
     cloudflared: {
       token: "通道權杖",

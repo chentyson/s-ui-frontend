@@ -326,6 +326,11 @@ export default {
       backendAddr: "نشانی (host:port)",
       socksInbounds: "ورودی‌های SOCKS پنل",
       backendHint: "برای اینکه ترافیک ورودی zhdata از مسیرهای خروجی و قواعد مسیریابی پنل عبور کند، ابتدا یک ورودی SOCKS در پنل بسازید و اینجا آن را انتخاب کنید؛ direct یعنی سرویس‌دهنده zhdata خودش به شبکه خروج می‌گیرد",
+      healthOk: "هسته {v} · {n} کاربر ارسال شد",
+      healthUnhealthy: "ناسالم",
+      healthSummary: "zhdata: {bad} از {total} ناسالم",
+      healthLastError: "آخرین خطا",
+      healthKeyMismatch: "ارسال‌شده {p} / پنل {m} / هسته {k}",
     },
     cloudflared: {
       token: "توکن تونل",

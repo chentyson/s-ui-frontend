@@ -99,6 +99,66 @@
           <v-row>
             <v-col>{{ $t('online') }}</v-col>
             <v-col>
+              <!-- zhdata is an external core: the panel is the only thing
+                   that can say whether the process is up and whether its
+                   admin probe found anything wrong. No entry (other
+                   protocols, backends that never report health) keeps the
+                   device/online marker below exactly as it was. -->
+              <template v-if="zhdataHealth(item)">
+                <v-chip
+                  v-if="!zhdataProblem(item)"
+                  density="comfortable"
+                  size="small"
+                  color="success"
+                  variant="flat"
+                >
+                  {{ $t('types.zhdata.healthOk', { v: zhdataHealth(item)?.version || '?', n: zhdataHealth(item)?.pushedUsers ?? 0 }) }}
+                </v-chip>
+                <v-chip
+                  v-else
+                  density="comfortable"
+                  size="small"
+                  :color="zhdataHealth(item)?.reachable === false ? 'error' : 'warning'"
+                  variant="flat"
+                >
+                  {{ $t('types.zhdata.healthUnhealthy') }}
+                  <v-tooltip
+                    activator="parent"
+                    location="top"
+                    max-width="420"
+                  >
+                    <div
+                      v-for="(w, wi) in zhdataHealth(item)?.warnings ?? []"
+                      :key="wi"
+                    >{{ w.detail }}</div>
+                    <div
+                      v-if="zhdataHealth(item)?.adminAddr"
+                      dir="ltr"
+                    >{{ $t('types.zhdata.adminAddr') }}: {{ zhdataHealth(item)?.adminAddr }}</div>
+                    <div
+                      v-if="zhdataHealth(item)?.lastError"
+                      dir="ltr"
+                    >{{ $t('types.zhdata.healthLastError') }}: {{ zhdataHealth(item)?.lastError }}</div>
+                    <!-- path -> keys per -users source; a broken source's
+                         error goes after the count, in red, because the
+                         process keeps running on the sources that loaded. -->
+                    <div
+                      v-for="(s, si) in zhdataHealth(item)?.userSources ?? []"
+                      :key="si"
+                      dir="ltr"
+                    >
+                      {{ s.path }} → {{ s.keys }}<span
+                        v-if="s.lastError"
+                        class="text-red-4"
+                      > {{ s.lastError }}</span>
+                    </div>
+                    <div
+                      v-if="(zhdataHealth(item)?.coreKeys ?? 0) < (zhdataHealth(item)?.panelUsers ?? 0)"
+                      dir="ltr"
+                    >{{ $t('types.zhdata.healthKeyMismatch', { p: zhdataHealth(item)?.pushedUsers ?? 0, m: zhdataHealth(item)?.panelUsers ?? 0, k: zhdataHealth(item)?.coreKeys ?? 0 }) }}</div>
+                  </v-tooltip>
+                </v-chip>
+              </template>
               <!-- Badge the devices actually connected once the backend
                    reports them; the online chip stays as the fallback for
                    backends that only send the tag list. -->
@@ -229,6 +289,7 @@
 
 <script lang="ts" setup>
 import Data from '@/store/modules/data'
+import type { ZhdataHealth } from '@/store/modules/data'
 import InboundVue from '@/layouts/modals/Inbound.vue'
 import Stats from '@/layouts/modals/Stats.vue'
 import Sessions from '@/layouts/modals/Sessions.vue'
@@ -257,6 +318,18 @@ const onlines = computed(() => {
 const inboundCounts = computed<Record<string, number>>(() => {
   return Data().onlines.inboundCounts ?? {}
 })
+
+// The store keys the polled zhdataHealth array by tag -- cards want their own
+// entry, not a scan of the array. A card has one only when its protocol is
+// zhdata and the backend probed it; undefined keeps the markers above as they
+// were. zhdataProblem mirrors the store's zhdataProblems getter.
+const zhdataByTag = computed(() => Data().zhdataByTag)
+const zhdataHealth = (item: Inbound): ZhdataHealth | undefined =>
+  item.type === 'zhdata' ? zhdataByTag.value.get(item.tag) : undefined
+const zhdataProblem = (item: Inbound): boolean => {
+  const h = zhdataHealth(item)
+  return !!h && (h.reachable === false || (h.warnings?.length ?? 0) > 0)
+}
 
 const modal = ref({
   visible: false,
