@@ -21,6 +21,10 @@
     :tag="sessions.tag"
     @close="closeSessions"
   />
+  <!-- The zhdata core itself is managed from the panel since ZY11; the bar
+       sits above the cards because those cards are the ones that run on it
+       (their health chips quote the very version this bar updates). -->
+  <ZhdataCoreBar />
   <v-row>
     <v-col
       cols="12"
@@ -291,6 +295,7 @@
 import Data from '@/store/modules/data'
 import type { ZhdataHealth } from '@/store/modules/data'
 import InboundVue from '@/layouts/modals/Inbound.vue'
+import ZhdataCoreBar from '@/components/ZhdataCoreBar.vue'
 import Stats from '@/layouts/modals/Stats.vue'
 import Sessions from '@/layouts/modals/Sessions.vue'
 import { computed, ref } from 'vue'

@@ -73,6 +73,19 @@
             style="margin-top: 10px;"
           >
             <v-window-item value="s">
+              <!-- A brand-new zhdata inbound on a machine without the core
+                   would start nothing; when the form's type is set to zhdata
+                   the modal asks the backend once and says so here. Saving is
+                   not blocked -- installing the core is a separate step on the
+                   inbounds page. -->
+              <v-alert
+                v-if="inbound.type == inTypes.Zhdata && zhdataCoreMissing"
+                type="warning"
+                variant="tonal"
+                density="compact"
+                class="mb-4"
+                :text="$t('types.zhdata.coreMissingInboundHint')"
+              />
               <Listen
                 v-if="!NoListen.includes(inbound.type) && !CustomListen.includes(inbound.type)"
                 :data="inbound"
@@ -266,6 +279,7 @@ import Transport from '@/components/Transport.vue'
 import AddrVue from '@/components/Addr.vue'
 import OutJsonVue from '@/components/OutJson.vue'
 import Data from '@/store/modules/data'
+import HttpUtils from '@/plugins/httputil'
 export default {
   components: {
     DocLink,
@@ -282,6 +296,10 @@ export default {
   emits: ['close'],
   data() {
     return {
+      // Whether the last check of a new zhdata inbound found the core missing
+      // on this machine; `Checked` keeps it to one request per form open.
+      zhdataCoreMissing: false,
+      zhdataCoreChecked: false,
       inbound: createInbound("direct",{ id:0, "tag": "" }),
       title: "add",
       loading: false,
@@ -373,6 +391,8 @@ export default {
       this.loading = false
     },
     updateData(id: number) {
+      this.zhdataCoreMissing = false
+      this.zhdataCoreChecked = false
       if (id > 0) {
         this.loadData(id)
         this.title = "edit"
@@ -425,6 +445,20 @@ export default {
         delete this.inbound.out_json
       }
       this.side = "s"
+      // Picking zhdata on a new inbound is the moment to ask whether the
+      // external core is even installed here; editing does not need to ask
+      // (its process state is on the cards and the core bar already).
+      if (this.$props.id == 0 && this.inbound.type == InTypes.Zhdata && !this.zhdataCoreChecked) {
+        this.zhdataCoreChecked = true
+        this.checkZhdataCore()
+      }
+    },
+    async checkZhdataCore() {
+      // Only a definite "not installed" is worth interrupting the form for.
+      // A failed request (network, older backend) stays silent here; the core
+      // bar on the inbounds page owns that error. HttpUtils already toasts it.
+      const msg = await HttpUtils.get<{ installed: boolean }>('api/zhdataCore')
+      if (msg.success && msg.obj && msg.obj.installed === false) this.zhdataCoreMissing = true
     },
     add_addr() {
       this.inbound.addrs?.push(<Addr>{ server: location.hostname, server_port: this.inbound.listen_port })
